@@ -1,12 +1,12 @@
 {
   "service_name": "Anyrouter Claude Code Probe",
-  "overall_status": "operational",
-  "http_status": 200,
-  "token_ok": true,
-  "last_token": "A",
-  "latency_ms": 3444.2,
-  "checked_at": "2026-04-16T12:10:20Z",
-  "error_message": "",
+  "overall_status": "major_outage",
+  "http_status": 520,
+  "token_ok": false,
+  "last_token": "",
+  "latency_ms": 1651.05,
+  "checked_at": "2026-04-16T12:15:21Z",
+  "error_message": "HTTP 520",
   "raw_error_type": null,
   "target_model": "claude-opus-4-6[1m]"
 }
