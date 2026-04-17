@@ -1,1 +1,1 @@
-# No third-party dependencies required.
+flask>=3.0
