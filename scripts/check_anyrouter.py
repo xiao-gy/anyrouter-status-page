@@ -356,7 +356,22 @@ def merge_history(history: Dict[str, Any], snapshot: Dict[str, Any]) -> Dict[str
     }
 
 
-def run_probe(api_base: str, api_key: str, model: str, timeout: int, prompt: str) -> Dict[str, Any]:
+def build_opener(proxy: Optional[str]) -> urllib.request.OpenerDirector:
+    if proxy:
+        handler = urllib.request.ProxyHandler({"http": proxy, "https": proxy})
+    else:
+        handler = urllib.request.ProxyHandler()
+    return urllib.request.build_opener(handler)
+
+
+def run_probe(
+    api_base: str,
+    api_key: str,
+    model: str,
+    timeout: int,
+    prompt: str,
+    proxy: Optional[str] = None,
+) -> Dict[str, Any]:
     checked_at = iso_z(utc_now())
     started = time.monotonic()
     status = default_status()
@@ -374,9 +389,10 @@ def run_probe(api_base: str, api_key: str, model: str, timeout: int, prompt: str
         headers=headers,
         method="POST",
     )
+    opener = build_opener(proxy)
 
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
+        with opener.open(req, timeout=timeout) as response:
             status["http_status"] = response.getcode()
             body_text = response.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
@@ -454,6 +470,11 @@ def parse_args() -> argparse.Namespace:
         default="Reply with exactly one visible character: A",
         help="Probe prompt",
     )
+    parser.add_argument(
+        "--proxy",
+        default=os.environ.get("ANYROUTER_PROXY", os.environ.get("HTTPS_PROXY", os.environ.get("HTTP_PROXY", ""))),
+        help="Proxy URL for upstream requests (e.g. http://127.0.0.1:7890)",
+    )
     parser.add_argument("--status-path", default=str(STATUS_PATH), help="status.json output path")
     parser.add_argument("--history-path", default=str(HISTORY_PATH), help="history.json output path")
     parser.add_argument("--print-json", action="store_true", help="Print the current snapshot to stdout")
@@ -469,7 +490,7 @@ def main() -> int:
         print("Missing ANYROUTER_API_KEY", file=sys.stderr)
         return 2
 
-    snapshot = run_probe(args.api_base, args.api_key, args.model, args.timeout, args.prompt)
+    snapshot = run_probe(args.api_base, args.api_key, args.model, args.timeout, args.prompt, args.proxy or None)
     history = load_json(Path(args.history_path), default_history())
     merged_history = merge_history(history, snapshot)
 
